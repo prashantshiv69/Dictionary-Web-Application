@@ -1,0 +1,280 @@
+Major Project(MERN)
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Dictionary Web Application</title>
+    <style>
+      
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            /* --- BACKGROUND IMAGE SETTINGS --- */
+            background-image: url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2256&auto=format&fit=crop');
+            background-size: cover;      
+            background-position: center;  
+            background-repeat: no-repeat; 
+            background-attachment: fixed; 
+            
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+         
+            background-color: rgba(232, 153, 110, 0.95);
+            width: 90%;
+            max-width: 500px;
+            padding: 3rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            
+          
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+       
+        .search-box {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .search-box input {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ab1eec;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #e20202;
+        }
+
+        .search-box button {
+            width: 25%;
+            padding: 10px;
+            background-color: #e91b1b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .search-box button:hover {
+            background-color: #357abd;
+        }
+
+       
+        .result {
+            display: none;
+        }
+
+        .word-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .word-header h2 {
+            font-size: 32px;
+            color: #333;
+            text-transform: capitalize;
+        }
+
+        .audio-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #4a90e2;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border: 1px solid #4a90e2;
+            border-radius: 20px;
+            display: none;
+        }
+
+        .audio-btn:hover {
+            background-color: #4a90e2;
+            color: white;
+        }
+
+        .phonetic {
+            color: #888;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+
+        .details {
+            margin-bottom: 20px;
+        }
+
+        .part-of-speech {
+            font-weight: bold;
+            color: #4a90e2;
+            margin-right: 10px;
+            font-style: italic;
+        }
+
+        .meaning {
+            color: #444;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .example-container {
+            border-left: 4px solid #4a90e2;
+            padding-left: 10px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 0 5px 5px 0;
+            color: #555;
+            font-style: italic;
+        }
+
+    
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1><u>Dictionary</u></h1>
+        
+        <div class="search-box">
+            <input type="text" id="inp-word" placeholder="Type a word here...">
+            <button id="search-btn">Search</button>
+        </div>
+
+        <div class="error" id="error-msg"></div>
+
+        <div class="result" id="result">
+            <div class="word-header">
+                <h2 id="word">sample</h2>
+                <button class="audio-btn" id="audio-btn">Play Audio 🔊</button>
+            </div>
+            
+            <div class="phonetic" id="phonetic">/sam-puhl/</div>
+
+            <div class="details">
+                <span class="part-of-speech" id="part-of-speech">noun</span>
+                <span class="meaning" id="definition">Definition goes here.</span>
+            </div>
+
+            <div class="example-container" id="example-box">
+                Example sentence goes here.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- JAVASCRIPT LOGIC --- */
+        const url = "https://api.dictionaryapi.dev/api/v2/entries/en/";
+        const result = document.getElementById("result");
+        const soundBtn = document.getElementById("audio-btn");
+        const searchBtn = document.getElementById("search-btn");
+        const inputWord = document.getElementById("inp-word");
+        const errorMsg = document.getElementById("error-msg");
+        let audio = new Audio();
+
+        searchBtn.addEventListener("click", () => {
+            let inpWord = inputWord.value.trim();
+            if (inpWord === "") {
+                result.style.display = "none";
+                errorMsg.style.display = "block";
+                errorMsg.innerHTML = "Please enter a word!";
+                return;
+            }
+
+            fetch(`${url}${inpWord}`)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Word not found");
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    errorMsg.style.display = "none";
+                    result.style.display = "block";
+                    const entry = data[0];
+                    const word = entry.word;
+                    
+                    let phoneticText = "";
+                    let audioSrc = "";
+                    
+                    if(entry.phonetics) {
+                        entry.phonetics.forEach(p => {
+                            if(p.text && !phoneticText) phoneticText = p.text;
+                            if(p.audio && !audioSrc) audioSrc = p.audio;
+                        });
+                    }
+
+                    document.getElementById("word").innerText = word;
+                    document.getElementById("phonetic").innerText = phoneticText || "";
+                    document.getElementById("part-of-speech").innerText = entry.meanings[0].partOfSpeech;
+                    document.getElementById("definition").innerText = entry.meanings[0].definitions[0].definition;
+
+                    const exampleText = entry.meanings[0].definitions[0].example;
+                    if(exampleText) {
+                        document.getElementById("example-box").innerText = `"${exampleText}"`;
+                    } else {
+                        document.getElementById("example-box").innerText = "Example not available";
+                    }
+
+                    if(audioSrc) {
+                        soundBtn.style.display = "block";
+                        audio.src = audioSrc;
+                    } else {
+                        soundBtn.style.display = "none";
+                    }
+                })
+                .catch(() => {
+                    result.style.display = "none";
+                    errorMsg.style.display = "block";
+                    errorMsg.innerHTML = `Word not found. Please try another word.`;
+                });
+        });
+
+        soundBtn.addEventListener("click", () => {
+            audio.play();
+        });
+
+        inputWord.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                searchBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
